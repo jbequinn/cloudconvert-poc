@@ -1,13 +1,9 @@
 package com.github.jbequinn.poc.cloudconvert;
 
-/**
- * Hello world!
- *
- */
-public class App 
-{
-    public static void main( String[] args )
-    {
-        System.out.println( "Hello World!" );
-    }
+import com.github.jbequinn.poc.cloudconvert.service.CloudConvertService;
+
+public class App {
+	public static void main(String[] args) {
+		new CloudConvertService(new AppProperties()).convert();
+	}
 }
