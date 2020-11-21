@@ -54,7 +54,7 @@ public class CloudConvertServiceIT {
 		// WHEN a new conversion job is created
 		new CloudConvertService(properties, client, objectMapper).convert();
 
-		// THEN a new job exists (created almost instantly - no need to wait)
+		// THEN a new job exists
 		assertThat(getExistingJobs(properties).getData())
 				.hasSize(1)
 				.first()
@@ -73,7 +73,7 @@ public class CloudConvertServiceIT {
 	}
 
 	@Test
-	void fileIsUploaded() throws Exception {
+	void fileIsUploaded() {
 		await()
 				.atMost(60, TimeUnit.SECONDS)
 				.pollDelay(10, TimeUnit.SECONDS)
@@ -90,8 +90,18 @@ public class CloudConvertServiceIT {
 
 	@Test
 	void fileIsConverted() {
-		// verify that a convert task is created
-		fail();
+		await()
+				.atMost(60, TimeUnit.SECONDS)
+				.pollDelay(10, TimeUnit.SECONDS)
+				.untilAsserted(() -> {
+					JobResponse job = getJobInfo(getExistingJobs(properties).getData().iterator().next().getId());
+
+					// AND THEN the status of the upload job is set as 'FINISHED'
+					assertThat(job.getData().getTasks())
+							.filteredOn(task -> "convert-test-file".equals(task.getName()))
+							.extracting(JobResponse.Task::getStatus)
+							.containsExactly("finished");
+				});
 	}
 
 	@Test

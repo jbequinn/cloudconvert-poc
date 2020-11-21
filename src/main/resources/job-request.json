@@ -1,0 +1,22 @@
+{
+	"tasks": {
+		"import-test-file": {
+			"operation": "import/upload"
+		},
+		"convert-test-file": {
+			"operation": "convert",
+			"input_format": "docx",
+			"output_format": "pdf",
+			"input": [
+				"import-test-file"
+			]
+		},
+		"export-test-file": {
+			"operation": "export/url",
+			"input": [
+				"convert-test-file"
+			],
+			"archive_multiple_files": false
+		}
+	}
+}

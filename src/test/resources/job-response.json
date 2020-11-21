@@ -1,0 +1,110 @@
+{
+	"data": {
+		"id": "some-job-id",
+		"tag": null,
+		"status": "waiting",
+		"created_at": "2020-11-20T18:08:09+00:00",
+		"started_at": null,
+		"ended_at": null,
+		"tasks": [
+			{
+				"id": "some-upload-task-id",
+				"name": "import-test-file",
+				"job_id": "some-job-id",
+				"status": "waiting",
+				"credits": null,
+				"code": null,
+				"message": "Waiting for file upload",
+				"percent": 100,
+				"operation": "import/upload",
+				"result": {
+					"form": {
+						"url": "https://some-url-upload",
+						"parameters": {
+							"acl": "private",
+							"key": "some-key/${filename}",
+							"success_action_status": "201",
+							"X-Amz-Credential": "some-credential",
+							"X-Amz-Algorithm": "some-algorithm",
+							"X-Amz-Date": "some-date",
+							"Policy": "some-policy",
+							"X-Amz-Signature": "some-signature"
+						}
+					}
+				},
+				"created_at": "2020-11-20T18:08:09+00:00",
+				"started_at": null,
+				"ended_at": null,
+				"retry_of_task_id": null,
+				"copy_of_task_id": null,
+				"user_id": 1,
+				"priority": -10,
+				"host_name": null,
+				"storage": "some-storage",
+				"depends_on_task_ids": [],
+				"links": {
+					"self": "https://some-self-link"
+				}
+			},
+			{
+				"id": "some-convert-task-id",
+				"name": "convert-test-file",
+				"job_id": "some-job-id",
+				"status": "waiting",
+				"credits": null,
+				"code": null,
+				"message": null,
+				"percent": 100,
+				"operation": "convert",
+				"engine": null,
+				"engine_version": null,
+				"result": null,
+				"created_at": "2020-11-20T18:08:09+00:00",
+				"started_at": null,
+				"ended_at": null,
+				"retry_of_task_id": null,
+				"copy_of_task_id": null,
+				"user_id": 1,
+				"priority": -10,
+				"host_name": null,
+				"storage": null,
+				"depends_on_task_ids": [
+					"some-upload-task-id"
+				],
+				"links": {
+					"self": "https://some-other-self-link"
+				}
+			},
+			{
+				"id": "some-export-task-id",
+				"name": "export-test-file",
+				"job_id": "6419cba8-9887-4b17-a063-9100f64c16e0",
+				"status": "waiting",
+				"credits": null,
+				"code": null,
+				"message": null,
+				"percent": 100,
+				"operation": "export/url",
+				"result": null,
+				"created_at": "2020-11-20T18:08:09+00:00",
+				"started_at": null,
+				"ended_at": null,
+				"retry_of_task_id": null,
+				"copy_of_task_id": null,
+				"user_id": 46949895,
+				"priority": -10,
+				"host_name": null,
+				"storage": null,
+				"depends_on_task_ids": [
+					"2b287f97-9408-49fb-b15d-ab8f198d8b12"
+				],
+				"links": {
+					"self": "https://some-other-self-link"
+				}
+			}
+		],
+		"links": {
+			"self": "https://some-self-link"
+		}
+	}
+}

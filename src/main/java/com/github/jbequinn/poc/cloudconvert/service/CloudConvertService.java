@@ -13,6 +13,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -44,6 +48,10 @@ public class CloudConvertService {
 		uploadFile(uploadTask);
 
 		// 3. poll until ready
+		await("job to be finished")
+				.atMost(5, TimeUnit.MINUTES)
+				.until(jobIsNotProcessing(job.getData().getId()));
+
 		// 4. download the file
 	}
 
@@ -100,6 +108,31 @@ public class CloudConvertService {
 
 				// nothing to return - the body doesn't seem to have anything useful
 			}
+		}
+	}
+
+	private Callable<Boolean> jobIsNotProcessing(String jobId) {
+		return () -> !"processing".equals(getJobInfo(jobId).getData().getStatus());
+	}
+
+	private JobResponse getJobInfo(String jobId) throws IOException {
+		try (Response response = client.newCall(new Request.Builder()
+				.url(properties.getJobsUrl() + "/" + jobId)
+				.header("Authorization", "Bearer " + properties.getAccessToken())
+				.get()
+				.build())
+				.execute()) {
+
+			if (!response.isSuccessful()) {
+				throw new IllegalStateException("Error when getting the job with id: " + jobId + ". error code: " + response.code());
+			}
+
+			return objectMapper.readValue(
+					Optional.ofNullable(response.body())
+							.orElseThrow(IllegalStateException::new)
+							.bytes(),
+					JobResponse.class
+			);
 		}
 	}
 }
