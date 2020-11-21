@@ -48,7 +48,7 @@ public class CloudConvertServiceIT {
 		properties.setOutputFilePath(File.createTempFile("test-file.pdf", null).getAbsolutePath());
 
 		// GIVEN that there are no existing jobs
-		// delete all existing tasks in the sandbox? if other git branches exist, it could affect them
+		// delete all existing tasks in the sandbox? if some other parallel development is taking place, this could affect it
 		deleteExistingJobs(properties);
 		assertThat(getExistingJobs(properties).getData())
 				.isEmpty();
@@ -61,6 +61,7 @@ public class CloudConvertServiceIT {
 				.hasSize(1)
 				.first()
 				.extracting(JobList.Job::getId)
+				// verify also that it has three tasks etc
 				.isNotNull();
 	}
 
@@ -161,6 +162,7 @@ public class CloudConvertServiceIT {
 		}
 	}
 
+	// this is used also in production. it could be moved to a 'dao' class
 	private static JobResponse getJobInfo(String jobId) throws IOException {
 		try (Response response = client.newCall(new Request.Builder()
 				.url(properties.getJobsUrl() + "/" + jobId)

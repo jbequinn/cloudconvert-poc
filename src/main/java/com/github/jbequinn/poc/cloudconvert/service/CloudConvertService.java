@@ -67,6 +67,8 @@ public class CloudConvertService {
 		downloadFile(exportedFile);
 	}
 
+	// this service class does not need to know the specific details of how cloudconvert
+	// is accessed. it could be moved to a 'dao' class
 	private JobResponse createConversionJob() throws IOException {
 		Request request = new Request.Builder()
 				.url(properties.getJobsUrl())
@@ -91,7 +93,8 @@ public class CloudConvertService {
 	}
 
 	private void uploadFile(JobResponse.Result uploadTask) throws IOException {
-		// the filename associated to the 'key' key needs to be replaced with the whitelisted file name
+		// the filename placeholder associated to the 'key' key needs to be replaced with the 'real' filename,
+		// or in case of sandbox tests, the whitelisted filename
 		String filename = Optional.ofNullable(properties.getWhileListFilename()).orElse(properties.getInputFilePath());
 		uploadTask.getForm().getParameters()
 				.compute("key", (key, value) -> value.replace("${filename}", filename));
