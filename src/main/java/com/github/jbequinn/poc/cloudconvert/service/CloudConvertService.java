@@ -5,14 +5,16 @@ import com.github.jbequinn.poc.cloudconvert.AppProperties;
 import com.github.jbequinn.poc.cloudconvert.pojo.JobResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
 
+@Slf4j
 @RequiredArgsConstructor
 public class CloudConvertService {
 	@NonNull private final AppProperties properties;
@@ -20,12 +22,27 @@ public class CloudConvertService {
 	@NonNull private final ObjectMapper objectMapper;
 
 	public void convert() throws IOException {
-		// 0. correctness: verify that the file exists, the access token is present, etc
+		// 0. correctness - fail fast: verify that the file exists, the access token is present, etc
+		if (properties.getAccessToken() == null) {
+			throw new IllegalArgumentException("No access token present.");
+		}
+		if (!new File(properties.getInputFilePath()).exists()) {
+			throw new IllegalArgumentException("The file: " + properties.getInputFilePath() + " does not exist or is not accessible");
+		}
 
 		// 1. create the job
 		JobResponse job = createConversionJob();
 
-		// 2. call convert
+		// the import-upload task contains the url to send the file to
+		JobResponse.Result uploadTask = Arrays.stream(job.getData().getTasks())
+				.filter(subtask -> "import-test-file".equals(subtask.getName()))
+				.findAny()
+				.map(JobResponse.Task::getResult)
+				.orElseThrow(() -> new IllegalStateException("No import file task found"));
+
+		// 2. upload the file - the process will not continue until the file is uploaded
+		uploadFile(uploadTask);
+
 		// 3. poll until ready
 		// 4. download the file
 	}
@@ -40,6 +57,7 @@ public class CloudConvertService {
 
 		try (Response response = client.newCall(request).execute()) {
 			if (!response.isSuccessful()) {
+				log.error(new String(response.body().bytes()));
 				throw new IllegalStateException("Error when creating the job. status code: " + response.code());
 			}
 
@@ -52,11 +70,36 @@ public class CloudConvertService {
 		}
 	}
 
-	private void uploadFile() {
-		// POST to import/upload to initiate the process
+	private void uploadFile(JobResponse.Result uploadTask) throws IOException {
+		// the filename associated to the 'key' key needs to be replaced with the whitelisted file name
+		String filename = Optional.ofNullable(properties.getWhileListFilename()).orElse(properties.getInputFilePath());
+		uploadTask.getForm().getParameters()
+				.compute("key", (key, value) -> value.replace("${filename}", filename));
 
-		// parse the response. get result.form url and parameters
+		MultipartBody.Builder multipartBodyBuilder = new MultipartBody.Builder();
+		multipartBodyBuilder.setType(MultipartBody.FORM);
+		uploadTask.getForm().getParameters().forEach(multipartBodyBuilder::addFormDataPart);
 
-		// POST the file contents
+		try (FileInputStream fileInputStream = new FileInputStream(properties.getInputFilePath())) {
+			multipartBodyBuilder.addFormDataPart(
+					"file",
+					filename,
+					RequestBody.create(fileInputStream.readAllBytes())
+			);
+
+			try (Response response = client.newCall(new Request.Builder()
+					.url(uploadTask.getForm().getUrl())
+					.post(multipartBodyBuilder.build())
+					.build())
+					.execute()) {
+
+				if (!response.isSuccessful()) {
+					log.error(new String(response.body().bytes()));
+					throw new IllegalStateException("Error when uploading the file. status code: " + response.code());
+				}
+
+				// nothing to return - the body doesn't seem to have anything useful
+			}
+		}
 	}
 }

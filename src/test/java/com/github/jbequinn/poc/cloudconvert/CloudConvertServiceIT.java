@@ -18,15 +18,16 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class CloudConvertServiceIT {
 
 	static OkHttpClient client = new OkHttpClient.Builder()
-			.connectTimeout(30, TimeUnit.SECONDS)
-			.writeTimeout(50, TimeUnit.SECONDS)
-			.readTimeout(50, TimeUnit.SECONDS)
-			.callTimeout(90, TimeUnit.SECONDS)
+			.connectTimeout(60, TimeUnit.SECONDS)
+			.writeTimeout(100, TimeUnit.SECONDS)
+			.readTimeout(100, TimeUnit.SECONDS)
+			.callTimeout(130, TimeUnit.SECONDS)
 			.build();
 
 	static ObjectMapper objectMapper = new ObjectMapper()
@@ -35,37 +36,35 @@ public class CloudConvertServiceIT {
 			.enable(SerializationFeature.WRAP_ROOT_VALUE);
 
 	static AppProperties properties = AppProperties.builder()
-			.uploadUrl("https://api.sandbox.cloudconvert.com/v2/import/upload")
 			.jobsUrl("https://api.sandbox.cloudconvert.com/v2/jobs")
 			.accessToken(System.getenv("CLOUDCONVERT_ACCESS_TOKEN"))
+			.whileListFilename("test-document.docx")
 			.inputFilePath(CloudConvertServiceIT.class.getResource("/test-document.docx").getPath())
 			.build();
 
 	@BeforeAll
 	static void beforeAll() throws Exception {
-		// delete all existing tasks in the sandbox? if you have other git branches, it could affect them
+		// delete all existing tasks in the sandbox? if other git branches exist, it could affect them
 		deleteExistingJobs(properties);
 
 		// GIVEN that there are no existing jobs
 		assertThat(getExistingJobs(properties).getData())
 				.isEmpty();
 
-		// WHEN a new job is created
-		CloudConvertService service = new CloudConvertService(properties, client, objectMapper);
-		service.convert();
-	}
+		// WHEN a new conversion job is created
+		new CloudConvertService(properties, client, objectMapper).convert();
 
-	@Test
-	void jobIsCreated() throws Exception {
-		JobList existingJobs = getExistingJobs(properties);
-		// THEN a new job exists
-		assertThat(existingJobs.getData())
+		// THEN a new job exists (created almost instantly - no need to wait)
+		assertThat(getExistingJobs(properties).getData())
 				.hasSize(1)
 				.first()
 				.extracting(JobList.Job::getId)
 				.isNotNull();
+	}
 
-		JobResponse job = getJobInfo(existingJobs.getData().iterator().next().getId());
+	@Test
+	void jobIsCreated() throws Exception {
+		JobResponse job = getJobInfo(getExistingJobs(properties).getData().iterator().next().getId());
 
 		// AND THEN this new job contains tasks for a conversion
 		assertThat(job.getData().getTasks())
@@ -74,9 +73,19 @@ public class CloudConvertServiceIT {
 	}
 
 	@Test
-	void fileIsUploaded() {
-		// verify that a import/upload task is created
-		fail();
+	void fileIsUploaded() throws Exception {
+		await()
+				.atMost(60, TimeUnit.SECONDS)
+				.pollDelay(10, TimeUnit.SECONDS)
+				.untilAsserted(() -> {
+					JobResponse job = getJobInfo(getExistingJobs(properties).getData().iterator().next().getId());
+
+					// AND THEN the status of the upload job is set as 'FINISHED'
+					assertThat(job.getData().getTasks())
+							.filteredOn(task -> "import-test-file".equals(task.getName()))
+							.extracting(JobResponse.Task::getStatus)
+							.containsExactly("finished");
+				});
 	}
 
 	@Test
@@ -146,5 +155,3 @@ public class CloudConvertServiceIT {
 		}
 	}
 }
-
-

@@ -16,6 +16,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>${maven.compiler.source}</maven.compiler.target>
+		<logback.version>1.2.3</logback.version>
 	</properties>
 
 	<dependencyManagement>
@@ -56,6 +57,27 @@
 			<artifactId>lombok</artifactId>
 			<version>1.18.16</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.7.30</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>${logback.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-core</artifactId>
+			<version>${logback.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.awaitility</groupId>
+			<artifactId>awaitility</artifactId>
+			<version>4.0.3</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
