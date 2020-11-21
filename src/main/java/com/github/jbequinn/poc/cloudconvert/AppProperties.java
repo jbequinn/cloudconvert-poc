@@ -16,5 +16,7 @@ public class AppProperties {
 	private String outputFilePath = "/tmp/test-file.pdf";
 	@Builder.Default
 	private String uploadUrl = "https://api.cloudconvert.com/v2/import/upload";
+	@Builder.Default
+	private String jobsUrl = "https://api.cloudconvert.com/v2/jobs";
 	private String accessToken;
 }
