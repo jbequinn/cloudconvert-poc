@@ -13,6 +13,7 @@ import okhttp3.Response;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -44,17 +45,18 @@ public class CloudConvertServiceIT {
 
 	@BeforeAll
 	static void beforeAll() throws Exception {
-		// delete all existing tasks in the sandbox? if other git branches exist, it could affect them
-		deleteExistingJobs(properties);
+		properties.setOutputFilePath(File.createTempFile("test-file.pdf", null).getAbsolutePath());
 
 		// GIVEN that there are no existing jobs
+		// delete all existing tasks in the sandbox? if other git branches exist, it could affect them
+		deleteExistingJobs(properties);
 		assertThat(getExistingJobs(properties).getData())
 				.isEmpty();
 
 		// WHEN a new conversion job is created
 		new CloudConvertService(properties, client, objectMapper).convert();
 
-		// THEN a new job exists
+		// THEN a new job appears
 		assertThat(getExistingJobs(properties).getData())
 				.hasSize(1)
 				.first()
@@ -74,13 +76,13 @@ public class CloudConvertServiceIT {
 
 	@Test
 	void fileIsUploaded() {
+		// AND THEN the import task should be finished
 		await()
 				.atMost(60, TimeUnit.SECONDS)
 				.pollDelay(10, TimeUnit.SECONDS)
 				.untilAsserted(() -> {
 					JobResponse job = getJobInfo(getExistingJobs(properties).getData().iterator().next().getId());
 
-					// AND THEN the status of the upload job is set as 'FINISHED'
 					assertThat(job.getData().getTasks())
 							.filteredOn(task -> "import-test-file".equals(task.getName()))
 							.extracting(JobResponse.Task::getStatus)
@@ -90,13 +92,13 @@ public class CloudConvertServiceIT {
 
 	@Test
 	void fileIsConverted() {
+		// AND THEN the conversion task should be finished
 		await()
 				.atMost(60, TimeUnit.SECONDS)
 				.pollDelay(10, TimeUnit.SECONDS)
 				.untilAsserted(() -> {
 					JobResponse job = getJobInfo(getExistingJobs(properties).getData().iterator().next().getId());
 
-					// AND THEN the status of the upload job is set as 'FINISHED'
 					assertThat(job.getData().getTasks())
 							.filteredOn(task -> "convert-test-file".equals(task.getName()))
 							.extracting(JobResponse.Task::getStatus)
@@ -105,14 +107,29 @@ public class CloudConvertServiceIT {
 	}
 
 	@Test
-	void fileIsReadyToBeExported() {
-		// verify that an export task is created
-		fail();
+	void fileIsExported() {
+		// AND THEN the export task should be finished
+		await()
+				.atMost(60, TimeUnit.SECONDS)
+				.pollDelay(10, TimeUnit.SECONDS)
+				.untilAsserted(() -> {
+					JobResponse job = getJobInfo(getExistingJobs(properties).getData().iterator().next().getId());
+
+					assertThat(job.getData().getTasks())
+							.filteredOn(task -> "export-test-file".equals(task.getName()))
+							.extracting(JobResponse.Task::getStatus)
+							.containsExactly("finished");
+				});
 	}
 
 	@Test
-	void fileIsExported() {
-		// verify that the exported file exists. is it worthy comparing it with an expected result file?
+	void fileIsDownloaded() {
+		// AND THEN the file has been downloaded locally
+	  assertThat(new File(properties.getOutputFilePath()))
+				.exists()
+				.canRead()
+				// maybe compare with a pre-downloaded file? but the conversion code could change
+				.isNotEmpty();
 	}
 
 	private static void deleteExistingJobs(AppProperties properties) throws Exception {

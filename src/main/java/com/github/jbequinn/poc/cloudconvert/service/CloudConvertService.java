@@ -10,6 +10,7 @@ import okhttp3.*;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
@@ -53,6 +54,17 @@ public class CloudConvertService {
 				.until(jobIsNotProcessing(job.getData().getId()));
 
 		// 4. download the file
+		JobResponse finalJobResponse = getJobInfo(job.getData().getId());
+		JobResponse.FileItem exportedFile = Arrays.stream(finalJobResponse.getData().getTasks())
+				.filter(subtask -> "export-test-file".equals(subtask.getName()))
+				.findAny()
+				.map(JobResponse.Task::getResult)
+				.map(JobResponse.Result::getFiles)
+				// there is supposed to be only one file
+				.map(fileItems -> fileItems[0])
+				.orElseThrow(() -> new IllegalStateException("No export file task found"));
+
+		downloadFile(exportedFile);
 	}
 
 	private JobResponse createConversionJob() throws IOException {
@@ -133,6 +145,25 @@ public class CloudConvertService {
 							.bytes(),
 					JobResponse.class
 			);
+		}
+	}
+
+	private void downloadFile(JobResponse.FileItem exportedFile) throws IOException {
+		Request request = new Request.Builder()
+				.url(exportedFile.getUrl())
+				.get()
+				.build();
+
+		try (Response response = client.newCall(request).execute();
+				 FileOutputStream fileOutputStream = new FileOutputStream(properties.getOutputFilePath())) {
+
+			if (!response.isSuccessful()) {
+				throw new IllegalStateException("Error when downloading the file. error code: " + response.code());
+			}
+
+			fileOutputStream.write(Optional.ofNullable(response.body())
+					.orElseThrow(IllegalStateException::new)
+					.bytes());
 		}
 	}
 }
