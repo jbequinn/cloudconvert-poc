@@ -38,7 +38,7 @@ public class CloudConvertServiceIT {
 
 	static AppProperties properties = AppProperties.builder()
 			.jobsUrl("https://api.sandbox.cloudconvert.com/v2/jobs")
-			.accessToken(System.getenv("CLOUDCONVERT_ACCESS_TOKEN"))
+			.accessToken(System.getProperty("CLOUDCONVERT_ACCESS_TOKEN"))
 			.whileListFilename("test-document.docx")
 			.inputFilePath(CloudConvertServiceIT.class.getResource("/test-document.docx").getPath())
 			.build();

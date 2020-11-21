@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class App {
 	public static void main(String[] args) throws IOException {
 		AppProperties properties = AppProperties.builder()
-				.accessToken(System.getenv("CLOUDCONVERT_ACCESS_TOKEN"))
+				.accessToken(System.getProperty("CLOUDCONVERT_ACCESS_TOKEN"))
 				.build();
 
 		OkHttpClient client = new OkHttpClient.Builder()
