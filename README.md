@@ -11,3 +11,8 @@ mvn compile exec:java -DCLOUDCONVERT_ACCESS_TOKEN=<your-key> -DCLOUDCONVERT_INPU
 ```
 
 The `CLOUDCONVERT_INPUT_FILE` and `CLOUDCONVERT_OUTPUT_FILE` system properties are optional. If not specified, the values `/tmp/test-file.docx` and `/tmp/test-file.pdf`, respectively, are used.
+
+## Technical insights
+
+- This PoC uses [Awaitility](http://www.awaitility.org/) as a way of asynchronously monitoring the state of the conversion job in CloudConvert.
+- Inputs can be retrieved from system properties, which makes the project suitable for running in Docker.
