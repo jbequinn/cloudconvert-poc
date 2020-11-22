@@ -3,13 +3,14 @@ package com.github.jbequinn.poc.cloudconvert;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jbequinn.poc.cloudconvert.service.CloudConvertService;
 import okhttp3.OkHttpClient;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 public class CloudServiceTest {
 	@Test
 	void failOnMissingAccessToken() {
-		Assertions.assertThatIllegalArgumentException()
+		assertThatIllegalArgumentException()
 				.isThrownBy(() ->
 						new CloudConvertService(AppProperties.builder()
 								// GIVEN there's no access token
@@ -26,7 +27,7 @@ public class CloudServiceTest {
 
 	@Test
 	void failOnMissingFile() {
-		Assertions.assertThatIllegalArgumentException()
+		assertThatIllegalArgumentException()
 				.isThrownBy(() ->
 						new CloudConvertService(AppProperties.builder()
 								.accessToken("totally-valid-token")
